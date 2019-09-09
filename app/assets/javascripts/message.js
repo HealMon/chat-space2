@@ -62,7 +62,6 @@ $(function(){
         $('.submit-btn').prop('disabled', false);
       })
       .fail(function() {
-        console.log('error');
         $('.submit-btn').prop('disabled', false);
       });
     }
