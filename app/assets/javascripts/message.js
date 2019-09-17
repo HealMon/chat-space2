@@ -1,71 +1,71 @@
 $(function(){
-  function appendMessage(msg) {
-    var html = `<div class='message' data-message-id="${msg.id}">
-                  <div class='message__upper-info'>
-                    <p class="message__upper-info__talker">${msg.name}</p>
-                    <p class="message__upper-info__date">${msg.time}</p>
-                  </div>
-                  <div class="lower-message">
-                    <p class="message__text">
-                      ${msg.content}
-                    </p>
-                    ${ msg.image !== null ? `<img class='lower-message__image' src='${msg.image}'>` : `` }
-                  </div>
-                </div>`
-    $('.messages').append(html)
-  }
+  function buildHTML(message){
+    var image = (message.image != null) ? `<img src='${message.image}'>` : "";
+    var html = 
+      `<div class="message" data-message-id="${message.id}">
+        <div class="message__upper-info">
+          <p class="message__upper-info__talker">
+            ${message.user_name}
+          </p>
+          <p class="message__upper-info__date">
+            ${message.date}
+          </p>
+        </div>
+        <div class="lower-message">
+          <p class="lower-message__content">
+            ${message.content}
+          </p>
+        </div>
+        ${image}
+      </div>`
+      return html;
+    }
   $('.new_message').on('submit', function(e){
     e.preventDefault();
     var formData = new FormData(this);
     var url = $(this).attr('action');
     $.ajax({
-      url: api_url,
+      url: url,
       type: "POST",
       data: formData,
       dataType: 'json',
       processData: false,
       contentType: false
     })
-
-    .done(function(message) {
-      appendMessage(message);
-      $('#new_message')[0].reset();
-      $('.submit-btn').prop('disabled', false);
-      $('.messages').animate({scrollTop: 999999}, 500, 'swing');
+    .done(function(data){
+      var html = buildHTML(data);
+      $('.messages').append(html);
+      $('.messages').animate({scrollTop: $('.messages')[0].scrollHeight}, 'fast');
+      $('form')[0].reset();
     })
-    .fail(function() {
-      alert('メッセージを投稿できませんでした。');
-      $('.submit-btn').prop('disabled', false);
+    .fail(function(){
+      alert('error');
     })
+    return false;
   });
 
   var reloadMessages = function() {
-    last_message_id = $('.message:last').data('message-id')
-    var urlRegex = new RegExp("groups/\[0-9]{1,}/messages")
-    var currentUrl = location.pathname
-
-    if( urlRegex.test(currentUrl) ) {
+    if (window.location.href.match(/\/groups\/\d\/messages/)){
+      last_message_id = $('.message').last().data('message-id');
       $.ajax({
+        url: 'api/messages',
         type: 'get',
-        url: './api/messages',
         dataType: 'json',
-        data: { id: last_message_id }
+        data: {id: last_message_id}
       })
-
       .done(function(messages) {
-        if(messages.length !== 0) {
-          messages.forEach(function (message) {
-            appendMessage(message);
-          });
-          $('.messages').animate({scrollTop: 999999}, 500, 'swing');
-        }
-        $('.submit-btn').prop('disabled', false);
+        var insertHTML = '';
+
+        messages.forEach(function(message){
+          insertHTML = buildHTML(message);
+          $('.messages').append(insertHTML);
+          $('.messages').animate({scrollTop: $('.messages')[0].scrollHeight}, 'fast');
+        });
       })
       .fail(function() {
-        $('.submit-btn').prop('disabled', false);
+        alert('error');
       });
     }
   };
-
   setInterval(reloadMessages, 5000);
-}); 
+});
